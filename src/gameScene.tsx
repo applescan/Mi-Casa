@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { dialogueData, scaleFactor, setCamScale } from "./constants";
 import DialogueBox from "./dialogBox";
 import { rockPaperScissors } from "./rockPaperScissors";
+import { bubblePop } from "./bubblePop";
 import { GameObj } from "kaboom";
 import { initKaboomWithCanvas, k } from "./kaboomCtx";
 
@@ -37,7 +38,6 @@ const GameScene: React.FC = () => {
     });
 
     k.loadSprite("map", "./mi-casa.png");
-    k.setBackground(k.Color.fromHex("#3a403b"));
 
     k.scene(
       "main",
@@ -45,6 +45,7 @@ const GameScene: React.FC = () => {
         movePlayerBack?: boolean;
         fromMiniGame?: boolean;
       }) => {
+        k.setBackground(k.Color.fromHex("#3a403b"));
         const mapData = await (await fetch("./mi-casa.json")).json();
         const layers = mapData.layers;
 
@@ -79,6 +80,13 @@ const GameScene: React.FC = () => {
             };
 
             k.go("rockPaperScissors");
+          } else if (boundaryName === "bath") {
+            savedPlayerState = {
+              pos: { x: player.pos.x, y: player.pos.y },
+              direction: player.direction,
+            };
+
+            k.go("bubblePop");
           } else if (boundaryName && dialogueData[boundaryName]) {
             setDialogue(dialogueData[boundaryName]);
             setIsDialogueVisible(true);
@@ -128,8 +136,14 @@ const GameScene: React.FC = () => {
           player.direction = savedPlayerState.direction;
 
           if (context?.movePlayerBack) {
-            player.pos = player.pos.add(k.vec2(20, 0));
+            player.pos = player.pos.add(k.vec2(60, 0));
           }
+
+          // Prevent immediate re-trigger when returning onto a boundary.
+          player.isInDialogue = true;
+          k.wait(0.4, () => {
+            player.isInDialogue = false;
+          });
 
           if (player.direction === "down") {
             player.play("idle-down");
@@ -257,6 +271,7 @@ const GameScene: React.FC = () => {
     );
 
     rockPaperScissors();
+    bubblePop();
     k.go("main");
 
     return () => {
