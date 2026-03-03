@@ -15,11 +15,19 @@ export const bubblePop = () => {
     const scaleFactor = Math.min(k.width() / 640, k.height() / 480);
     const textSize = Math.max(18 * scaleFactor, 16);
 
-    k.add([
+    const background = k.add([
       k.sprite("bathtub", { width: k.width(), height: k.height() }),
       k.pos(0, 0),
       k.z(-10),
     ]);
+
+    const resizeBackground = () => {
+      background.width = k.width();
+      background.height = k.height();
+    };
+
+    resizeBackground();
+    k.onResize(resizeBackground);
 
     k.add([
       k.text("Pop the bubbles!", { size: textSize * 1.2 }),
