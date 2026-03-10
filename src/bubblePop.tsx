@@ -16,14 +16,21 @@ export const bubblePop = () => {
     const textSize = Math.max(18 * scaleFactor, 16);
 
     const background = k.add([
-      k.sprite("bathtub", { width: k.width(), height: k.height() }),
+      k.sprite("bathtub"),
       k.pos(0, 0),
       k.z(-10),
     ]);
+    const backgroundNativeSize = { w: background.width, h: background.height };
 
     const resizeBackground = () => {
-      background.width = k.width();
-      background.height = k.height();
+      const scale = Math.max(
+        k.width() / backgroundNativeSize.w,
+        k.height() / backgroundNativeSize.h
+      );
+      background.scale = k.vec2(scale, scale);
+      const scaledW = backgroundNativeSize.w * scale;
+      const scaledH = backgroundNativeSize.h * scale;
+      background.pos = k.vec2((k.width() - scaledW) / 2, (k.height() - scaledH) / 2);
     };
 
     resizeBackground();
@@ -31,20 +38,20 @@ export const bubblePop = () => {
 
     k.add([
       k.text("Pop the bubbles!", { size: textSize * 1.2 }),
-      k.pos(k.width() / 2, 24 * scaleFactor),
+      k.pos(k.width() / 2, 48 * scaleFactor),
       k.anchor("center"),
       k.color(20, 40, 70),
     ]);
 
     const scoreText = k.add([
       k.text(`Bubbles: ${score}`, { size: textSize }),
-      k.pos(20 * scaleFactor, 60 * scaleFactor),
+      k.pos(20 * scaleFactor, 92 * scaleFactor),
       k.color(20, 40, 70),
     ]);
 
     const timerText = k.add([
       k.text(`Time: ${timeLeft.toFixed(1)}s`, { size: textSize }),
-      k.pos(k.width() - 20 * scaleFactor, 60 * scaleFactor),
+      k.pos(k.width() - 20 * scaleFactor, 92 * scaleFactor),
       k.anchor("topright"),
       k.color(20, 40, 70),
     ]);
@@ -52,7 +59,7 @@ export const bubblePop = () => {
     const spawnBubble = () => {
       if (!isRunning) return;
 
-      const radius = k.rand(46, 72) * scaleFactor;
+      const radius = k.rand(64, 96) * scaleFactor;
       const x = k.rand(radius + 20, k.width() - radius - 20);
       const y = k.rand(radius + 110, k.height() - radius - 40);
 

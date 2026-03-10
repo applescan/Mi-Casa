@@ -31,12 +31,27 @@ export const rockPaperScissors = () => {
     const maxRounds = 3;
     let gameLocked = false;
 
-    // Background (cropped for mobile)
-    k.add([
+    // Background (cover to fill on mobile).
+    const background = k.add([
       k.sprite("background"),
-      k.pos(isPortrait ? -k.width() * 0.25 : 0, 0),
-      k.scale(isPortrait ? 1.5 : 1), // Crop effect
+      k.pos(0, 0),
+      k.z(-10),
     ]);
+    const backgroundNativeSize = { w: background.width, h: background.height };
+
+    const resizeBackground = () => {
+      const scale = Math.max(
+        k.width() / backgroundNativeSize.w,
+        k.height() / backgroundNativeSize.h
+      );
+      background.scale = k.vec2(scale, scale);
+      const scaledW = backgroundNativeSize.w * scale;
+      const scaledH = backgroundNativeSize.h * scale;
+      background.pos = k.vec2((k.width() - scaledW) / 2, (k.height() - scaledH) / 2);
+    };
+
+    resizeBackground();
+    k.onResize(resizeBackground);
 
     // Text sizes
     const textSize = Math.max(18 * scaleFactor, 16);
