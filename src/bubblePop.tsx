@@ -1,4 +1,5 @@
 import { k } from "./kaboomCtx";
+import { addLeaderboardEntry, formatLeaderboard } from "./leaderboard";
 
 export const bubblePop = () => {
   k.loadRoot("/assets/");
@@ -18,6 +19,7 @@ export const bubblePop = () => {
     const background = k.add([
       k.sprite("bathtub"),
       k.pos(0, 0),
+      k.scale(1),
       k.z(-10),
     ]);
     const backgroundNativeSize = { w: background.width, h: background.height };
@@ -104,15 +106,29 @@ export const bubblePop = () => {
       if (!isRunning) return;
       isRunning = false;
       k.get("bubble").forEach((bubble) => bubble.destroy());
+      const leaderboardEntries = addLeaderboardEntry("bubblePop", {
+        score,
+        label: `${score}`,
+        detail: "bubbles",
+      });
 
       k.add([
         k.text(`Time's up!\nFinal count: ${score}`, { size: textSize * 1.1 }),
-        k.pos(k.width() / 2, k.height() / 2 - 40 * scaleFactor),
+        k.pos(k.width() / 2, k.height() / 2 - 92 * scaleFactor),
         k.anchor("center"),
         k.color(20, 40, 70),
       ]);
 
-      createQuitButton(k.width() / 2, k.height() / 2 + 50 * scaleFactor);
+      k.add([
+        k.text(`Leaderboard\n${formatLeaderboard(leaderboardEntries)}`, {
+          size: Math.max(textSize * 0.72, 12),
+        }),
+        k.pos(k.width() / 2, k.height() / 2 + 8 * scaleFactor),
+        k.anchor("center"),
+        k.color(20, 40, 70),
+      ]);
+
+      createQuitButton(k.width() / 2, k.height() / 2 + 145 * scaleFactor);
     };
 
     const createQuitButton = (x: number, y: number) => {

@@ -1,4 +1,5 @@
 import { k } from "./kaboomCtx";
+import { addLeaderboardEntry, formatLeaderboard } from "./leaderboard";
 
 export const preloadAssets = () => {
   k.loadRoot("/assets/");
@@ -30,11 +31,13 @@ export const rockPaperScissors = () => {
     let roundsPlayed = 0;
     const maxRounds = 3;
     let gameLocked = false;
+    let gameEnded = false;
 
     // Background (cover to fill on mobile).
     const background = k.add([
       k.sprite("background"),
       k.pos(0, 0),
+      k.scale(1),
       k.z(-10),
     ]);
     const backgroundNativeSize = { w: background.width, h: background.height };
@@ -101,7 +104,14 @@ export const rockPaperScissors = () => {
 
     // Handle round results
     const handleResult = () => {
-      if (!playerChoice || !computerChoice) return;
+      if (
+        !playerChoice ||
+        !computerChoice ||
+        gameEnded ||
+        roundsPlayed >= maxRounds
+      ) {
+        return;
+      }
       roundsPlayed++;
 
       // Show fish's choice
@@ -139,6 +149,20 @@ export const rockPaperScissors = () => {
 
     // End game function
     const endGame = () => {
+      if (gameEnded) return;
+      gameEnded = true;
+      const gameOutcome =
+        playerScore > computerScore
+          ? "Win"
+          : computerScore > playerScore
+            ? "Loss"
+            : "Tie";
+      const leaderboardEntries = addLeaderboardEntry("rockPaperScissors", {
+        score: playerScore * 10 + (playerScore - computerScore),
+        label: gameOutcome,
+        detail: `${playerScore}-${computerScore}`,
+      });
+
       if (playerScore > computerScore) {
         resultText.text = `You win the game!\nFinal Score: ${playerScore}-${computerScore}`;
       } else if (computerScore > playerScore) {
@@ -156,6 +180,20 @@ export const rockPaperScissors = () => {
           button.destroy();
         }
       });
+
+      k.add([
+        k.text(`Leaderboard\n${formatLeaderboard(leaderboardEntries)}`, {
+          size: Math.max(textSize * 0.72, 12),
+        }),
+        k.pos(
+          k.width() / 2,
+          isPortrait
+            ? k.height() / 2 + 20 * scaleFactor
+            : k.height() - 175 * scaleFactor
+        ),
+        k.anchor("center"),
+        k.color(0, 0, 0),
+      ]);
 
       createQuitButton(
         k.width() / 2,

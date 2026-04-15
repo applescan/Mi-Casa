@@ -3,6 +3,7 @@ import { dialogueData, scaleFactor, setCamScale } from "./constants";
 import DialogueBox from "./dialogBox";
 import { rockPaperScissors } from "./rockPaperScissors";
 import { bubblePop } from "./bubblePop";
+import { flyCatch } from "./flyCatch";
 import { GameObj } from "kaboom";
 import { initKaboomWithCanvas, k } from "./kaboomCtx";
 
@@ -87,6 +88,13 @@ const GameScene: React.FC = () => {
             };
 
             k.go("bubblePop");
+          } else if (boundaryName === "food") {
+            savedPlayerState = {
+              pos: { x: player.pos.x, y: player.pos.y },
+              direction: player.direction,
+            };
+
+            k.go("flyCatch");
           } else if (boundaryName && dialogueData[boundaryName]) {
             setDialogue(dialogueData[boundaryName]);
             setIsDialogueVisible(true);
@@ -272,6 +280,7 @@ const GameScene: React.FC = () => {
 
     rockPaperScissors();
     bubblePop();
+    flyCatch();
     k.go("main");
 
     return () => {
