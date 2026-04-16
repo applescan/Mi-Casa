@@ -106,11 +106,6 @@ export const bubblePop = () => {
       if (!isRunning) return;
       isRunning = false;
       k.get("bubble").forEach((bubble) => bubble.destroy());
-      const leaderboardEntries = addLeaderboardEntry("bubblePop", {
-        score,
-        label: `${score}`,
-        detail: "bubbles",
-      });
 
       k.add([
         k.text(`Time's up!\nFinal count: ${score}`, { size: textSize * 1.1 }),
@@ -119,14 +114,22 @@ export const bubblePop = () => {
         k.color(20, 40, 70),
       ]);
 
-      k.add([
-        k.text(`Leaderboard\n${formatLeaderboard(leaderboardEntries)}`, {
+      const leaderboardText = k.add([
+        k.text("Leaderboard\nSaving score...", {
           size: Math.max(textSize * 0.72, 12),
         }),
         k.pos(k.width() / 2, k.height() / 2 + 8 * scaleFactor),
         k.anchor("center"),
         k.color(20, 40, 70),
       ]);
+
+      void addLeaderboardEntry("bubblePop", {
+        score,
+        label: `${score}`,
+        detail: "bubbles",
+      }).then((leaderboardEntries) => {
+        leaderboardText.text = `Leaderboard\n${formatLeaderboard(leaderboardEntries)}`;
+      });
 
       createQuitButton(k.width() / 2, k.height() / 2 + 145 * scaleFactor);
     };

@@ -158,11 +158,6 @@ export const flyCatch = () => {
 
       isRunning = false;
       k.get("cockroach").forEach((cockroach) => cockroach.destroy());
-      const leaderboardEntries = addLeaderboardEntry("flyCatch", {
-        score,
-        label: `${score}`,
-        detail: "roaches",
-      });
 
       k.add([
         k.text(`Time's up!\nFinal count: ${score}`, { size: textSize * 1.1 }),
@@ -171,14 +166,22 @@ export const flyCatch = () => {
         k.color(24, 24, 24),
       ]);
 
-      k.add([
-        k.text(`Leaderboard\n${formatLeaderboard(leaderboardEntries)}`, {
+      const leaderboardText = k.add([
+        k.text("Leaderboard\nSaving score...", {
           size: Math.max(textSize * 0.72, 12),
         }),
         k.pos(k.width() / 2, k.height() / 2 + 8 * scaleFactor),
         k.anchor("center"),
         k.color(24, 24, 24),
       ]);
+
+      void addLeaderboardEntry("flyCatch", {
+        score,
+        label: `${score}`,
+        detail: "roaches",
+      }).then((leaderboardEntries) => {
+        leaderboardText.text = `Leaderboard\n${formatLeaderboard(leaderboardEntries)}`;
+      });
 
       createQuitButton(k.width() / 2, k.height() / 2 + 145 * scaleFactor);
     };

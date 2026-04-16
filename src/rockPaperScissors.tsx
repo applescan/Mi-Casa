@@ -157,11 +157,6 @@ export const rockPaperScissors = () => {
           : computerScore > playerScore
             ? "Loss"
             : "Tie";
-      const leaderboardEntries = addLeaderboardEntry("rockPaperScissors", {
-        score: playerScore * 10 + (playerScore - computerScore),
-        label: gameOutcome,
-        detail: `${playerScore}-${computerScore}`,
-      });
 
       if (playerScore > computerScore) {
         resultText.text = `You win the game!\nFinal Score: ${playerScore}-${computerScore}`;
@@ -181,8 +176,8 @@ export const rockPaperScissors = () => {
         }
       });
 
-      k.add([
-        k.text(`Leaderboard\n${formatLeaderboard(leaderboardEntries)}`, {
+      const leaderboardText = k.add([
+        k.text("Leaderboard\nSaving score...", {
           size: Math.max(textSize * 0.72, 12),
         }),
         k.pos(
@@ -194,6 +189,14 @@ export const rockPaperScissors = () => {
         k.anchor("center"),
         k.color(0, 0, 0),
       ]);
+
+      void addLeaderboardEntry("rockPaperScissors", {
+        score: playerScore * 10 + (playerScore - computerScore),
+        label: gameOutcome,
+        detail: `${playerScore}-${computerScore}`,
+      }).then((leaderboardEntries) => {
+        leaderboardText.text = `Leaderboard\n${formatLeaderboard(leaderboardEntries)}`;
+      });
 
       createQuitButton(
         k.width() / 2,

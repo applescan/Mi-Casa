@@ -48,12 +48,18 @@ To run **Mi Casa** locally, follow these steps:
     npm install
     ```
 
-4. **Run the development server**:
+4. **Add your database URL**:
+    Create a `.env` file and set `DATABASE_URL` to your Neon/Postgres connection string:
     ```bash
-    npm start
+    DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
     ```
 
-5. **Play the game**:
+5. **Run the development server**:
+    ```bash
+    npm run dev
+    ```
+
+6. **Play the game**:
     Open your browser and go to `http://localhost:5173` to start playing the game!
 
 ## How to Play

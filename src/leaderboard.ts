@@ -10,6 +10,7 @@ export interface LeaderboardEntry {
 }
 
 const MAX_ENTRIES = 5;
+const LEADERBOARD_ENDPOINT = "/api/leaderboard";
 
 const storageKey = (gameId: MiniGameId) => `mi-casa:${gameId}:leaderboard`;
 
@@ -20,10 +21,12 @@ const isLeaderboardEntry = (entry: unknown): entry is LeaderboardEntry => {
   return (
     typeof candidate.id === "string" &&
     typeof candidate.score === "number" &&
+    Number.isFinite(candidate.score) &&
     typeof candidate.label === "string" &&
     typeof candidate.detail === "string" &&
     typeof candidate.date === "string" &&
-    typeof candidate.timestamp === "number"
+    typeof candidate.timestamp === "number" &&
+    Number.isFinite(candidate.timestamp)
   );
 };
 
@@ -32,7 +35,7 @@ const rankEntries = (entries: LeaderboardEntry[]) =>
     (a, b) => b.score - a.score || b.timestamp - a.timestamp
   );
 
-export const readLeaderboard = (gameId: MiniGameId) => {
+const readLocalLeaderboard = (gameId: MiniGameId) => {
   if (typeof window === "undefined") return [];
 
   try {
@@ -51,35 +54,104 @@ export const readLeaderboard = (gameId: MiniGameId) => {
   }
 };
 
-export const addLeaderboardEntry = (
+const saveLocalLeaderboard = (
   gameId: MiniGameId,
+  entries: LeaderboardEntry[]
+) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(storageKey(gameId), JSON.stringify(entries));
+  } catch {
+    // The database is authoritative; localStorage is only a display fallback.
+  }
+};
+
+const randomId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const createLocalEntry = (
   entry: Pick<LeaderboardEntry, "score" | "label" | "detail">
 ) => {
   const now = new Date();
-  const newEntry: LeaderboardEntry = {
+
+  return {
     ...entry,
-    id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: randomId(),
     date: now.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     }),
     timestamp: now.getTime(),
   };
+};
 
-  const entries = rankEntries([...readLeaderboard(gameId), newEntry]).slice(
-    0,
-    MAX_ENTRIES
-  );
+const addLocalLeaderboardEntry = (
+  gameId: MiniGameId,
+  entry: Pick<LeaderboardEntry, "score" | "label" | "detail">
+) => {
+  const entries = rankEntries([
+    ...readLocalLeaderboard(gameId),
+    createLocalEntry(entry),
+  ]).slice(0, MAX_ENTRIES);
 
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(storageKey(gameId), JSON.stringify(entries));
-    } catch {
-      return entries;
-    }
-  }
+  saveLocalLeaderboard(gameId, entries);
 
   return entries;
+};
+
+const parseLeaderboardResponse = async (response: Response) => {
+  if (!response.ok) return null;
+
+  const data: unknown = await response.json();
+  if (!data || typeof data !== "object") return null;
+
+  const entries = (data as { entries?: unknown }).entries;
+  if (!Array.isArray(entries)) return null;
+
+  return rankEntries(entries.filter(isLeaderboardEntry)).slice(0, MAX_ENTRIES);
+};
+
+export const readLeaderboard = async (gameId: MiniGameId) => {
+  try {
+    const entries = await parseLeaderboardResponse(
+      await fetch(`${LEADERBOARD_ENDPOINT}/${encodeURIComponent(gameId)}`)
+    );
+
+    if (!entries) return readLocalLeaderboard(gameId);
+
+    saveLocalLeaderboard(gameId, entries);
+    return entries;
+  } catch {
+    return readLocalLeaderboard(gameId);
+  }
+};
+
+export const addLeaderboardEntry = async (
+  gameId: MiniGameId,
+  entry: Pick<LeaderboardEntry, "score" | "label" | "detail">
+) => {
+  try {
+    const entries = await parseLeaderboardResponse(
+      await fetch(`${LEADERBOARD_ENDPOINT}/${encodeURIComponent(gameId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry),
+      })
+    );
+
+    if (!entries) return addLocalLeaderboardEntry(gameId, entry);
+
+    saveLocalLeaderboard(gameId, entries);
+    return entries;
+  } catch {
+    return addLocalLeaderboardEntry(gameId, entry);
+  }
 };
 
 export const formatLeaderboard = (entries: LeaderboardEntry[]) => {
