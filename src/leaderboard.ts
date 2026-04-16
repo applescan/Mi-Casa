@@ -1,4 +1,8 @@
-export type MiniGameId = "bubblePop" | "flyCatch" | "rockPaperScissors";
+export type MiniGameId =
+  | "bubblePop"
+  | "flyCatch"
+  | "remoteHunt"
+  | "rockPaperScissors";
 
 export interface LeaderboardEntry {
   id: string;

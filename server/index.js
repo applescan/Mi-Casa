@@ -14,7 +14,12 @@ const port = Number(process.env.PORT) || 5173;
 const databaseUrl = process.env.DATABASE_URL;
 const sql = databaseUrl ? neon(databaseUrl) : null;
 const maxEntries = 5;
-const miniGameIds = new Set(["bubblePop", "flyCatch", "rockPaperScissors"]);
+const miniGameIds = new Set([
+  "bubblePop",
+  "flyCatch",
+  "remoteHunt",
+  "rockPaperScissors",
+]);
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",

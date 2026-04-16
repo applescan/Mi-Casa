@@ -7,7 +7,7 @@ Welcome to **Mi Casa**! A fun, interactive virtual tour of my house where you ca
 ## Features
 
 - **Explore a virtual house**: Roam through different rooms and discover details about the house and its surroundings.
-- **Mini-games**: Enjoy exciting mini-games like rock-paper-scissors, with plans for more mini-games to be added in future updates.
+- **Mini-games**: Enjoy quick mini-games like rock-paper-scissors, bubble pop, roach catch, and remote hunt.
 - **Interactive dialogue**: Trigger dialogues with various characters to learn more about the house and its world.
 - **Dynamic player movement**: Smooth and responsive movement system, allowing the player to move freely within the environment using both mouse and keyboard controls.
 - **Responsive camera**: The camera follows the player as they explore, offering a seamless and immersive experience.

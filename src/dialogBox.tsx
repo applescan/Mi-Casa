@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 interface DialogueBoxProps {
   text: string;
@@ -30,10 +30,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     }
   }, [isVisible, text]);
 
-  const closeDialogue = () => {
+  const closeDialogue = useCallback(() => {
     setCurrentText("");
     onDisplayEnd();
-  };
+  }, [onDisplayEnd]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -44,7 +44,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible]);
+  }, [closeDialogue, isVisible]);
 
   if (!isVisible) return null;
 

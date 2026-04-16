@@ -4,6 +4,7 @@ import DialogueBox from "./dialogBox";
 import { rockPaperScissors } from "./rockPaperScissors";
 import { bubblePop } from "./bubblePop";
 import { flyCatch } from "./flyCatch";
+import { remoteHunt } from "./remoteHunt";
 import { GameObj } from "kaboom";
 import { initKaboomWithCanvas, k } from "./kaboomCtx";
 
@@ -14,11 +15,15 @@ const GameScene: React.FC = () => {
   const [isDialogueVisible, setIsDialogueVisible] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const playerRef = useRef<GameObj | null>(null);
-
-  let savedPlayerState: {
+  const isDialogueVisibleRef = useRef(false);
+  const savedPlayerStateRef = useRef<{
     pos: { x: number; y: number };
     direction: string;
-  } | null = null;
+  } | null>(null);
+
+  useEffect(() => {
+    isDialogueVisibleRef.current = isDialogueVisible;
+  }, [isDialogueVisible]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -74,27 +79,29 @@ const GameScene: React.FC = () => {
         playerRef.current = player;
 
         const handleDialogue = (boundaryName: DialogueKeys) => {
+          const startMiniGame = (
+            sceneName:
+              | "rockPaperScissors"
+              | "bubblePop"
+              | "flyCatch"
+              | "remoteHunt"
+          ) => {
+            savedPlayerStateRef.current = {
+              pos: { x: player.pos.x, y: player.pos.y },
+              direction: player.direction,
+            };
+
+            k.go(sceneName);
+          };
+
           if (boundaryName === "fish") {
-            savedPlayerState = {
-              pos: { x: player.pos.x, y: player.pos.y },
-              direction: player.direction,
-            };
-
-            k.go("rockPaperScissors");
+            startMiniGame("rockPaperScissors");
           } else if (boundaryName === "bath") {
-            savedPlayerState = {
-              pos: { x: player.pos.x, y: player.pos.y },
-              direction: player.direction,
-            };
-
-            k.go("bubblePop");
+            startMiniGame("bubblePop");
           } else if (boundaryName === "food") {
-            savedPlayerState = {
-              pos: { x: player.pos.x, y: player.pos.y },
-              direction: player.direction,
-            };
-
-            k.go("flyCatch");
+            startMiniGame("flyCatch");
+          } else if (boundaryName === "sofa") {
+            startMiniGame("remoteHunt");
           } else if (boundaryName && dialogueData[boundaryName]) {
             setDialogue(dialogueData[boundaryName]);
             setIsDialogueVisible(true);
@@ -139,7 +146,8 @@ const GameScene: React.FC = () => {
           }
         }
 
-        if (context?.fromMiniGame && savedPlayerState) {
+        if (context?.fromMiniGame && savedPlayerStateRef.current) {
+          const savedPlayerState = savedPlayerStateRef.current;
           player.pos = k.vec2(savedPlayerState.pos.x, savedPlayerState.pos.y);
           player.direction = savedPlayerState.direction;
 
@@ -171,7 +179,7 @@ const GameScene: React.FC = () => {
 
         k.onUpdate(() => {
           // Prevent player movement and animations during dialogue
-          if (isDialogueVisible) {
+          if (isDialogueVisibleRef.current) {
             player.stop();
             return;
           }
@@ -181,7 +189,7 @@ const GameScene: React.FC = () => {
         });
 
         const stopAnims = () => {
-          if (isDialogueVisible) return;
+          if (isDialogueVisibleRef.current) return;
 
           if (player.direction === "down") {
             player.play("idle-down");
@@ -281,6 +289,7 @@ const GameScene: React.FC = () => {
     rockPaperScissors();
     bubblePop();
     flyCatch();
+    remoteHunt();
     k.go("main");
 
     return () => {
