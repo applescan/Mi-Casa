@@ -1,5 +1,11 @@
 import { k } from "./kaboomCtx";
-import { addLeaderboardEntry, formatLeaderboard } from "./leaderboard";
+import {
+  AUDIO_MUTED_EVENT,
+  getAudioMutedFromEvent,
+  readAudioMuted,
+} from "./audioState";
+import { addLeaderboardEntry } from "./leaderboard";
+import { addLeaderboardDisplay, addTopPanel } from "./miniGameHelpers";
 
 export const preloadAssets = () => {
   k.loadRoot("/assets/");
@@ -15,6 +21,34 @@ export const rockPaperScissors = () => {
   preloadAssets();
 
   k.scene("rockPaperScissors", () => {
+    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+
+    const rpsBgm = new Audio("/assets/rock-paper-clash.mp3");
+    rpsBgm.loop = true;
+    rpsBgm.volume = 0.36;
+    rpsBgm.muted = readAudioMuted();
+    rpsBgm.preload = "auto";
+
+    void rpsBgm.play().catch(() => {
+      // The browser may reject playback if it does not count the scene change as a gesture.
+    });
+
+    const updateMuted = (event: Event) => {
+      const muted = getAudioMutedFromEvent(event);
+      if (muted === null) return;
+
+      rpsBgm.muted = muted;
+    };
+
+    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
+
+    k.onSceneLeave(() => {
+      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
+      rpsBgm.pause();
+      rpsBgm.currentTime = 0;
+      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
+    });
+
     const choices = ["Rock", "Paper", "Scissors"] as const;
 
     const SPRITE_SIZE = 64;
@@ -58,6 +92,8 @@ export const rockPaperScissors = () => {
 
     // Text sizes
     const textSize = Math.max(18 * scaleFactor, 16);
+
+    addTopPanel(scaleFactor);
 
     // UI Elements (Centered)
     const playerScoreText = k.add([
@@ -195,7 +231,17 @@ export const rockPaperScissors = () => {
         label: gameOutcome,
         detail: `${playerScore}-${computerScore}`,
       }).then((leaderboardEntries) => {
-        leaderboardText.text = `Leaderboard\n${formatLeaderboard(leaderboardEntries)}`;
+        leaderboardText.destroy();
+        addLeaderboardDisplay({
+          entries: leaderboardEntries,
+          x: k.width() / 2,
+          y: isPortrait
+            ? k.height() / 2 + 20 * scaleFactor
+            : k.height() - 175 * scaleFactor,
+          textSize,
+          scaleFactor,
+          color: [0, 0, 0],
+        });
       });
 
       createQuitButton(

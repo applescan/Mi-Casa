@@ -1,8 +1,12 @@
 export type MiniGameId =
   | "bubblePop"
+  | "dustBunnyChase"
   | "flyCatch"
+  | "laundrySort"
+  | "recipeRush"
   | "remoteHunt"
-  | "rockPaperScissors";
+  | "rockPaperScissors"
+  | "waterPlants";
 
 export interface LeaderboardEntry {
   id: string;
@@ -11,6 +15,7 @@ export interface LeaderboardEntry {
   detail: string;
   date: string;
   timestamp: number;
+  isCurrent?: boolean;
 }
 
 const MAX_ENTRIES = 5;
@@ -39,6 +44,16 @@ const rankEntries = (entries: LeaderboardEntry[]) =>
     (a, b) => b.score - a.score || b.timestamp - a.timestamp
   );
 
+const stripCurrentMarkers = (entries: LeaderboardEntry[]) =>
+  entries.map(({ id, score, label, detail, date, timestamp }) => ({
+    id,
+    score,
+    label,
+    detail,
+    date,
+    timestamp,
+  }));
+
 const readLocalLeaderboard = (gameId: MiniGameId) => {
   if (typeof window === "undefined") return [];
 
@@ -65,7 +80,10 @@ const saveLocalLeaderboard = (
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(storageKey(gameId), JSON.stringify(entries));
+    window.localStorage.setItem(
+      storageKey(gameId),
+      JSON.stringify(stripCurrentMarkers(entries))
+    );
   } catch {
     // The database is authoritative; localStorage is only a display fallback.
   }
@@ -92,6 +110,7 @@ const createLocalEntry = (
       day: "numeric",
     }),
     timestamp: now.getTime(),
+    isCurrent: true,
   };
 };
 
@@ -115,10 +134,24 @@ const parseLeaderboardResponse = async (response: Response) => {
   const data: unknown = await response.json();
   if (!data || typeof data !== "object") return null;
 
-  const entries = (data as { entries?: unknown }).entries;
+  const responseData = data as {
+    entries?: unknown;
+    currentEntryId?: unknown;
+  };
+  const entries = responseData.entries;
   if (!Array.isArray(entries)) return null;
 
-  return rankEntries(entries.filter(isLeaderboardEntry)).slice(0, MAX_ENTRIES);
+  const currentEntryId =
+    typeof responseData.currentEntryId === "string"
+      ? responseData.currentEntryId
+      : null;
+
+  return rankEntries(
+    entries.filter(isLeaderboardEntry).map((entry) => ({
+      ...entry,
+      isCurrent: entry.id === currentEntryId,
+    }))
+  ).slice(0, MAX_ENTRIES);
 };
 
 export const readLeaderboard = async (gameId: MiniGameId) => {
@@ -162,9 +195,11 @@ export const formatLeaderboard = (entries: LeaderboardEntry[]) => {
   if (entries.length === 0) return "No scores yet";
 
   return entries
-    .map(
-      (entry, index) =>
-        `${index + 1}. ${entry.label} - ${entry.detail} (${entry.date})`
-    )
+    .map((entry, index) => formatLeaderboardEntry(entry, index))
     .join("\n");
 };
+
+export const formatLeaderboardEntry = (
+  entry: LeaderboardEntry,
+  index: number
+) => `${index + 1}. ${entry.label} - ${entry.detail} (${entry.date})`;

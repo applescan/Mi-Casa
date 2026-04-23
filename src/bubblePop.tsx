@@ -1,5 +1,11 @@
 import { k } from "./kaboomCtx";
-import { addLeaderboardEntry, formatLeaderboard } from "./leaderboard";
+import {
+  AUDIO_MUTED_EVENT,
+  getAudioMutedFromEvent,
+  readAudioMuted,
+} from "./audioState";
+import { addLeaderboardEntry } from "./leaderboard";
+import { addLeaderboardDisplay, addTopPanel } from "./miniGameHelpers";
 
 export const bubblePop = () => {
   k.loadRoot("/assets/");
@@ -8,6 +14,34 @@ export const bubblePop = () => {
   k.loadSprite("bubble", "bubble.png");
 
   k.scene("bubblePop", () => {
+    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+
+    const bubbleBgm = new Audio("/assets/bubble-pop.mp3");
+    bubbleBgm.loop = true;
+    bubbleBgm.volume = 0.36;
+    bubbleBgm.muted = readAudioMuted();
+    bubbleBgm.preload = "auto";
+
+    void bubbleBgm.play().catch(() => {
+      // The browser may reject playback if it does not count the scene change as a gesture.
+    });
+
+    const updateMuted = (event: Event) => {
+      const muted = getAudioMutedFromEvent(event);
+      if (muted === null) return;
+
+      bubbleBgm.muted = muted;
+    };
+
+    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
+
+    k.onSceneLeave(() => {
+      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
+      bubbleBgm.pause();
+      bubbleBgm.currentTime = 0;
+      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
+    });
+
     const durationSeconds = 10;
     let timeLeft = durationSeconds;
     let score = 0;
@@ -37,6 +71,8 @@ export const bubblePop = () => {
 
     resizeBackground();
     k.onResize(resizeBackground);
+
+    addTopPanel(scaleFactor);
 
     k.add([
       k.text("Pop the bubbles!", { size: textSize * 1.2 }),
@@ -128,7 +164,15 @@ export const bubblePop = () => {
         label: `${score}`,
         detail: "bubbles",
       }).then((leaderboardEntries) => {
-        leaderboardText.text = `Leaderboard\n${formatLeaderboard(leaderboardEntries)}`;
+        leaderboardText.destroy();
+        addLeaderboardDisplay({
+          entries: leaderboardEntries,
+          x: k.width() / 2,
+          y: k.height() / 2 + 8 * scaleFactor,
+          textSize,
+          scaleFactor,
+          color: [20, 40, 70],
+        });
       });
 
       createQuitButton(k.width() / 2, k.height() / 2 + 145 * scaleFactor);

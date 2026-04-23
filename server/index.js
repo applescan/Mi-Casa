@@ -16,9 +16,13 @@ const sql = databaseUrl ? neon(databaseUrl) : null;
 const maxEntries = 5;
 const miniGameIds = new Set([
   "bubblePop",
+  "dustBunnyChase",
   "flyCatch",
+  "laundrySort",
+  "recipeRush",
   "remoteHunt",
   "rockPaperScissors",
+  "waterPlants",
 ]);
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -163,13 +167,14 @@ app.post("/api/leaderboard/:gameId", async (req, res) => {
 
   try {
     await ensureSchema();
+    const id = randomUUID();
     await sql`
       INSERT INTO leaderboard_scores (id, game_id, score, label, detail)
-      VALUES (${randomUUID()}, ${gameId}, ${entry.score}, ${entry.label}, ${entry.detail})
+      VALUES (${id}, ${gameId}, ${entry.score}, ${entry.label}, ${entry.detail})
     `;
 
     const entries = await readLeaderboard(gameId);
-    res.status(201).json({ entries });
+    res.status(201).json({ entries, currentEntryId: id });
   } catch (error) {
     console.error("Leaderboard write failed:", describeError(error));
     res.status(500).json({ error: "Unable to save leaderboard score." });
