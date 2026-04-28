@@ -62,6 +62,25 @@ To run **Mi Casa** locally, follow these steps:
 6. **Play the game**:
     Open your browser and go to `http://localhost:5173` to start playing the game!
 
+## Vercel Deployment
+
+The deployed Vercel app uses the serverless route in `api/leaderboard/[gameId].js` for database-backed leaderboards.
+
+Before deploying, add `DATABASE_URL` in Vercel:
+
+1. Open the Vercel project.
+2. Go to **Settings > Environment Variables**.
+3. Add `DATABASE_URL` for Production, Preview, and Development as needed.
+4. Redeploy the project.
+
+You can verify the API after deployment by opening:
+
+```text
+https://your-site.vercel.app/api/leaderboard/bubblePop
+```
+
+If it returns JSON with an `entries` array, the database leaderboard API is running.
+
 ## How to Play
 
 - **Explore**: Click to move the player around the house and interact with various objects.
