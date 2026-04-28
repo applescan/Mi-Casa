@@ -30,11 +30,6 @@ type MiniGameScene =
   | "waterPlants";
 type ReturnMode = "default" | "awayFromBoundary";
 
-const getViewportSize = () => ({
-  width: window.innerWidth,
-  height: window.innerHeight,
-});
-
 const shouldUseLandscapeMiniGames = () =>
   window.matchMedia("(pointer: coarse)").matches &&
   Math.max(window.innerWidth, window.innerHeight) <= 1100;
@@ -73,12 +68,6 @@ const GameScene: React.FC = () => {
   const [dialogue, setDialogue] = useState<string | null>(null);
   const [isDialogueVisible, setIsDialogueVisible] = useState(false);
   const [isMuted, setIsMuted] = useState(() => readAudioMuted());
-  const [pendingMiniGame, setPendingMiniGame] = useState<MiniGameScene | null>(
-    null
-  );
-  const [viewportSize, setViewportSize] = useState(() =>
-    typeof window === "undefined" ? { width: 0, height: 0 } : getViewportSize()
-  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const playerRef = useRef<GameObj | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
@@ -99,36 +88,13 @@ const GameScene: React.FC = () => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const updateViewportSize = () => {
-      setViewportSize(getViewportSize());
-    };
-
-    updateViewportSize();
-    window.addEventListener("resize", updateViewportSize);
-    window.addEventListener("orientationchange", updateViewportSize);
-
-    return () => {
-      window.removeEventListener("resize", updateViewportSize);
-      window.removeEventListener("orientationchange", updateViewportSize);
-    };
-  }, []);
-
   const launchMiniGame = (sceneName: MiniGameScene) => {
-    setPendingMiniGame(null);
-    void requestLandscapeOrientation();
+    if (typeof window !== "undefined" && shouldUseLandscapeMiniGames()) {
+      void requestLandscapeOrientation();
+    }
+
     k.go(sceneName);
   };
-
-  useEffect(() => {
-    if (!pendingMiniGame) return;
-
-    if (!shouldUseLandscapeMiniGames() || viewportSize.width >= viewportSize.height) {
-      launchMiniGame(pendingMiniGame);
-    }
-  }, [pendingMiniGame, viewportSize]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -198,7 +164,6 @@ const GameScene: React.FC = () => {
         movePlayerBack?: boolean;
         fromMiniGame?: boolean;
       }) => {
-        setPendingMiniGame(null);
         releaseLandscapeOrientation();
         k.setBackground(k.Color.fromHex("#3a403b"));
         const mapData = await (await fetch("./mi-casa.json")).json();
@@ -239,17 +204,6 @@ const GameScene: React.FC = () => {
             };
 
             primeMiniGameAudio(sceneName);
-            player.isInDialogue = true;
-
-            if (
-              typeof window !== "undefined" &&
-              shouldUseLandscapeMiniGames() &&
-              window.innerHeight > window.innerWidth
-            ) {
-              setPendingMiniGame(sceneName);
-              return;
-            }
-
             launchMiniGame(sceneName);
           };
 
@@ -514,18 +468,6 @@ const GameScene: React.FC = () => {
     });
   };
 
-  const cancelPendingMiniGame = () => {
-    setPendingMiniGame(null);
-    if (playerRef.current) {
-      playerRef.current.isInDialogue = false;
-    }
-  };
-
-  const showLandscapePrompt =
-    pendingMiniGame !== null &&
-    shouldUseLandscapeMiniGames() &&
-    viewportSize.height > viewportSize.width;
-
   return (
     <div
       style={{
@@ -586,62 +528,6 @@ const GameScene: React.FC = () => {
           )}
         </svg>
       </button>
-      {showLandscapePrompt ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1300,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            background:
-              "linear-gradient(180deg, rgba(18, 18, 18, 0.92), rgba(36, 36, 36, 0.96))",
-          }}
-        >
-          <div
-            style={{
-              width: "min(420px, 100%)",
-              padding: "24px 20px",
-              border: "4px solid #242424",
-              borderRadius: "16px",
-              backgroundColor: "#fff8df",
-              boxShadow: "8px 8px 0 #242424",
-              textAlign: "center",
-              color: "#242424",
-              fontFamily: "'Press Start 2P', cursive",
-              lineHeight: 1.7,
-            }}
-          >
-            <div style={{ fontSize: "44px", marginBottom: "18px" }}>↻</div>
-            <p style={{ margin: 0, fontSize: "12px" }}>
-              Rotate your phone to landscape.
-            </p>
-            <p style={{ margin: "14px 0 0", fontSize: "10px" }}>
-              The mini-game will start automatically when your phone is sideways.
-            </p>
-            <button
-              type="button"
-              onClick={cancelPendingMiniGame}
-              style={{
-                marginTop: "22px",
-                padding: "12px 16px",
-                border: "3px solid #242424",
-                borderRadius: "10px",
-                backgroundColor: "#f6d669",
-                color: "#242424",
-                boxShadow: "4px 4px 0 #242424",
-                fontFamily: "'Press Start 2P', cursive",
-                fontSize: "10px",
-                cursor: "pointer",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
       <canvas ref={canvasRef} id="game-canvas"></canvas>
       <DialogueBox
         text={dialogue || ""}
