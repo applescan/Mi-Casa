@@ -195,16 +195,8 @@ export const bubblePop = () => {
       k.go("main", { fromMiniGame: true, movePlayerBack: true });
     });
 
-    // Match rock-paper-scissors button handling (mouse + touch).
     k.onClick("button", (button) => {
       button.clickAction?.();
-    });
-
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((b) => b.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-      }
     });
   });
 };

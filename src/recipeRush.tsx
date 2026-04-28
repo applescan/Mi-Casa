@@ -233,19 +233,5 @@ export const recipeRush = () => {
       timerText.text = `Time: ${timeLeft.toFixed(1)}s`;
     });
 
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((button) => button.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-        return;
-      }
-
-      const clickedIngredient = k
-        .get("ingredientChoice")
-        .find((ingredient) => ingredient.hasPoint(pos));
-      if (clickedIngredient) {
-        clickedIngredient.clickAction?.();
-      }
-    });
   });
 };

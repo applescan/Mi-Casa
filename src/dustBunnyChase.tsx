@@ -170,19 +170,5 @@ export const dustBunnyChase = () => {
       timerText.text = `Time: ${timeLeft.toFixed(1)}s`;
     });
 
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((button) => button.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-        return;
-      }
-
-      const clickedBunny = k
-        .get("dustBunny")
-        .find((bunny) => bunny.hasPoint(pos));
-      if (clickedBunny) {
-        catchBunny(clickedBunny);
-      }
-    });
   });
 };

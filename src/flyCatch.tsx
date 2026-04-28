@@ -230,20 +230,5 @@ export const flyCatch = () => {
     k.onClick("button", (button) => {
       button.clickAction?.();
     });
-
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((button) => button.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-        return;
-      }
-
-      const clickedCockroach = k
-        .get("cockroach")
-        .find((cockroach) => cockroach.hasPoint(pos));
-      if (clickedCockroach) {
-        catchCockroach(clickedCockroach);
-      }
-    });
   });
 };

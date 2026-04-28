@@ -295,21 +295,6 @@ export const rockPaperScissors = () => {
       }, 500);
     });
 
-    // Touch support (Prevent multiple taps)
-    k.onTouchStart((pos) => {
-      if (gameLocked) return;
-      gameLocked = true;
-
-      const clickedButton = k.get("button").find((b) => b.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-      }
-
-      setTimeout(() => {
-        gameLocked = false;
-      }, 500);
-    });
-
     // Escape key to return to main menu
     k.onKeyPress("escape", () => {
       k.go("main", { fromMiniGame: true, movePlayerBack: true });

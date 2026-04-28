@@ -65,18 +65,15 @@ const getMiniGameAudio = (gameId: MiniGameAudioId) => {
   audio.volume = config.volume;
   audio.muted = readAudioMuted();
   audio.preload = "auto";
-  audio.load();
 
   miniGameAudioMap.set(gameId, audio);
   return audio;
 };
 
-export const preloadMiniGameAudio = () => {
+export const primeMiniGameAudio = (gameId: MiniGameAudioId) => {
   if (typeof window === "undefined") return;
 
-  (Object.keys(miniGameAudioConfig) as MiniGameAudioId[]).forEach((gameId) => {
-    getMiniGameAudio(gameId);
-  });
+  getMiniGameAudio(gameId).load();
 };
 
 export const startMiniGameAudio = (gameId: MiniGameAudioId) => {

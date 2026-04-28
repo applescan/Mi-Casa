@@ -276,20 +276,5 @@ export const remoteHunt = () => {
     k.onClick("button", (button) => {
       button.clickAction?.();
     });
-
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((button) => button.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-        return;
-      }
-
-      const clickedCushion = k
-        .get("cushion")
-        .find((cushion) => cushion.hasPoint(pos));
-      if (clickedCushion) {
-        clickedCushion.clickAction?.();
-      }
-    });
   });
 };

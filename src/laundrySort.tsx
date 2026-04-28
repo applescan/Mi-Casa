@@ -262,17 +262,5 @@ export const laundrySort = () => {
       timerText.text = `Time: ${timeLeft.toFixed(1)}s`;
     });
 
-    k.onTouchStart((pos) => {
-      const clickedButton = k.get("button").find((button) => button.hasPoint(pos));
-      if (clickedButton) {
-        clickedButton.clickAction?.();
-        return;
-      }
-
-      const clickedBasket = k.get("basket").find((basket) => basket.hasPoint(pos));
-      if (clickedBasket) {
-        clickedBasket.clickAction?.();
-      }
-    });
   });
 };
