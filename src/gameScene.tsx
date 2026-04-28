@@ -11,6 +11,7 @@ import { recipeRush } from "./recipeRush";
 import { waterPlants } from "./waterPlants";
 import { GameObj } from "kaboom";
 import { initKaboomWithCanvas, k } from "./kaboomCtx";
+import { preloadMiniGameAudio } from "./miniGameAudio";
 import {
   dispatchAudioMuted,
   readAudioMuted,
@@ -63,8 +64,10 @@ const GameScene: React.FC = () => {
     bgm.volume = 0.28;
     bgm.muted = isMutedRef.current;
     bgm.preload = "auto";
+    bgm.load();
     bgmRef.current = bgm;
     k.volume(isMutedRef.current ? 0 : 1);
+    preloadMiniGameAudio();
 
     const startBgm = () => {
       if (!bgmRef.current) return;

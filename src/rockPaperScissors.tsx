@@ -1,10 +1,6 @@
 import { k } from "./kaboomCtx";
-import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
 import { addLeaderboardEntry } from "./leaderboard";
+import { startMiniGameAudio } from "./miniGameAudio";
 import { addLeaderboardDisplay, addTopPanel } from "./miniGameHelpers";
 
 export const preloadAssets = () => {
@@ -21,33 +17,9 @@ export const rockPaperScissors = () => {
   preloadAssets();
 
   k.scene("rockPaperScissors", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("rockPaperScissors");
 
-    const rpsBgm = new Audio("/assets/rock-paper-clash.mp3");
-    rpsBgm.loop = true;
-    rpsBgm.volume = 0.36;
-    rpsBgm.muted = readAudioMuted();
-    rpsBgm.preload = "auto";
-
-    void rpsBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      rpsBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      rpsBgm.pause();
-      rpsBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const choices = ["Rock", "Paper", "Scissors"] as const;
 

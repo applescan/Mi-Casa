@@ -1,10 +1,5 @@
 import { k } from "./kaboomCtx";
 import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
-import {
   addCoverBackground,
   addExitControls,
   addLeaderboardEndScreen,
@@ -12,6 +7,7 @@ import {
   getScaleFactor,
   getTextSize,
 } from "./miniGameHelpers";
+import { startMiniGameAudio } from "./miniGameAudio";
 
 type LaundryKind = "lights" | "colors" | "delicates";
 
@@ -31,33 +27,9 @@ export const laundrySort = () => {
   k.loadSprite("shirtDelicate", "shirt-delicate.svg");
 
   k.scene("laundrySort", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("laundrySort");
 
-    const laundryBgm = new Audio("/assets/pocket-fold-party.mp3");
-    laundryBgm.loop = true;
-    laundryBgm.volume = 0.36;
-    laundryBgm.muted = readAudioMuted();
-    laundryBgm.preload = "auto";
-
-    void laundryBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      laundryBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      laundryBgm.pause();
-      laundryBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 20;
     const laundryItems: LaundryItem[] = [

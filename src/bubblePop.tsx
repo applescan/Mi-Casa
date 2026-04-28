@@ -1,10 +1,6 @@
 import { k } from "./kaboomCtx";
-import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
 import { addLeaderboardEntry } from "./leaderboard";
+import { startMiniGameAudio } from "./miniGameAudio";
 import { addLeaderboardDisplay, addTopPanel } from "./miniGameHelpers";
 
 export const bubblePop = () => {
@@ -14,33 +10,9 @@ export const bubblePop = () => {
   k.loadSprite("bubble", "bubble.png");
 
   k.scene("bubblePop", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("bubblePop");
 
-    const bubbleBgm = new Audio("/assets/bubble-pop.mp3");
-    bubbleBgm.loop = true;
-    bubbleBgm.volume = 0.36;
-    bubbleBgm.muted = readAudioMuted();
-    bubbleBgm.preload = "auto";
-
-    void bubbleBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      bubbleBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      bubbleBgm.pause();
-      bubbleBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 10;
     let timeLeft = durationSeconds;

@@ -1,10 +1,5 @@
 import { k } from "./kaboomCtx";
 import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
-import {
   addCoverBackground,
   addExitControls,
   addLeaderboardEndScreen,
@@ -12,6 +7,7 @@ import {
   getScaleFactor,
   getTextSize,
 } from "./miniGameHelpers";
+import { startMiniGameAudio } from "./miniGameAudio";
 
 type IngredientId = "apple" | "bread" | "carrot" | "milk";
 
@@ -36,33 +32,9 @@ export const recipeRush = () => {
   k.loadSprite("ingredientMilk", "ingredient-milk.svg");
 
   k.scene("recipeRush", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("recipeRush");
 
-    const recipeBgm = new Audio("/assets/pantry.mp3");
-    recipeBgm.loop = true;
-    recipeBgm.volume = 0.36;
-    recipeBgm.muted = readAudioMuted();
-    recipeBgm.preload = "auto";
-
-    void recipeBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      recipeBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      recipeBgm.pause();
-      recipeBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 22;
     const ingredients: Ingredient[] = [

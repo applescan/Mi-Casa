@@ -1,10 +1,5 @@
 import { k } from "./kaboomCtx";
 import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
-import {
   addCoverBackground,
   addExitControls,
   addLeaderboardEndScreen,
@@ -12,6 +7,7 @@ import {
   getScaleFactor,
   getTextSize,
 } from "./miniGameHelpers";
+import { startMiniGameAudio } from "./miniGameAudio";
 
 export const waterPlants = () => {
   k.loadRoot("/assets/");
@@ -20,33 +16,9 @@ export const waterPlants = () => {
   k.loadSprite("plant", "plant.svg");
 
   k.scene("waterPlants", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("waterPlants");
 
-    const wateringBgm = new Audio("/assets/sprout.mp3");
-    wateringBgm.loop = true;
-    wateringBgm.volume = 0.38;
-    wateringBgm.muted = readAudioMuted();
-    wateringBgm.preload = "auto";
-
-    void wateringBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      wateringBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      wateringBgm.pause();
-      wateringBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 22;
     let timeLeft = durationSeconds;

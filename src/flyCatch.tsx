@@ -1,10 +1,6 @@
 import { k } from "./kaboomCtx";
-import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
 import { addLeaderboardEntry } from "./leaderboard";
+import { startMiniGameAudio } from "./miniGameAudio";
 import { addLeaderboardDisplay } from "./miniGameHelpers";
 
 export const flyCatch = () => {
@@ -14,33 +10,9 @@ export const flyCatch = () => {
   k.loadSprite("cockroach", "cockroach.png");
 
   k.scene("flyCatch", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("flyCatch");
 
-    const foodBgm = new Audio("/assets/rotten-pantry.mp3");
-    foodBgm.loop = true;
-    foodBgm.volume = 0.36;
-    foodBgm.muted = readAudioMuted();
-    foodBgm.preload = "auto";
-
-    void foodBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      foodBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      foodBgm.pause();
-      foodBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 10;
     let timeLeft = durationSeconds;

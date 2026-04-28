@@ -1,10 +1,5 @@
 import { k } from "./kaboomCtx";
 import {
-  AUDIO_MUTED_EVENT,
-  getAudioMutedFromEvent,
-  readAudioMuted,
-} from "./audioState";
-import {
   addCoverBackground,
   addExitControls,
   addLeaderboardEndScreen,
@@ -12,6 +7,7 @@ import {
   getScaleFactor,
   getTextSize,
 } from "./miniGameHelpers";
+import { startMiniGameAudio } from "./miniGameAudio";
 
 export const dustBunnyChase = () => {
   k.loadRoot("/assets/");
@@ -20,33 +16,9 @@ export const dustBunnyChase = () => {
   k.loadSprite("dustBunny", "dust-bunny.svg");
 
   k.scene("dustBunnyChase", () => {
-    window.dispatchEvent(new Event("mi-casa:pause-main-bgm"));
+    const stopMiniGameAudio = startMiniGameAudio("dustBunnyChase");
 
-    const dustBgm = new Audio("/assets/dust-mite.mp3");
-    dustBgm.loop = true;
-    dustBgm.volume = 0.36;
-    dustBgm.muted = readAudioMuted();
-    dustBgm.preload = "auto";
-
-    void dustBgm.play().catch(() => {
-      // The browser may reject playback if it does not count the scene change as a gesture.
-    });
-
-    const updateMuted = (event: Event) => {
-      const muted = getAudioMutedFromEvent(event);
-      if (muted === null) return;
-
-      dustBgm.muted = muted;
-    };
-
-    window.addEventListener(AUDIO_MUTED_EVENT, updateMuted);
-
-    k.onSceneLeave(() => {
-      window.removeEventListener(AUDIO_MUTED_EVENT, updateMuted);
-      dustBgm.pause();
-      dustBgm.currentTime = 0;
-      window.dispatchEvent(new Event("mi-casa:resume-main-bgm"));
-    });
+    k.onSceneLeave(stopMiniGameAudio);
 
     const durationSeconds = 15;
     let timeLeft = durationSeconds;
