@@ -12,6 +12,7 @@ import { waterPlants } from "./waterPlants";
 import { GameObj } from "kaboom";
 import { initKaboomWithCanvas, k } from "./kaboomCtx";
 import { primeMiniGameAudio } from "./miniGameAudio";
+import { isCoarsePointerDevice } from "./deviceProfile";
 import {
   dispatchAudioMuted,
   readAudioMuted,
@@ -29,10 +30,49 @@ type MiniGameScene =
   | "recipeRush"
   | "waterPlants";
 type ReturnMode = "default" | "awayFromBoundary";
+type HouseMapObject = {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+type HouseMapLayer = {
+  name: string;
+  objects?: HouseMapObject[];
+};
+type HouseMapData = {
+  width: number;
+  height: number;
+  tilewidth: number;
+  tileheight: number;
+  layers: HouseMapLayer[];
+};
+
+let mapDataPromise: Promise<HouseMapData> | null = null;
 
 const shouldUseLandscapeMiniGames = () =>
-  window.matchMedia("(pointer: coarse)").matches &&
+  isCoarsePointerDevice() &&
   Math.max(window.innerWidth, window.innerHeight) <= 1100;
+
+const loadHouseMapData = async () => {
+  if (!mapDataPromise) {
+    mapDataPromise = fetch("./mi-casa.json")
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load map data: ${response.status}`);
+        }
+
+        return (await response.json()) as HouseMapData;
+      })
+      .catch((error) => {
+        mapDataPromise = null;
+        throw error;
+      });
+  }
+
+  return mapDataPromise;
+};
 
 const requestLandscapeOrientation = async () => {
   const orientation = window.screen?.orientation as
@@ -62,6 +102,20 @@ const releaseLandscapeOrientation = () => {
   } catch {
     // Ignore unsupported unlock calls.
   }
+};
+
+const clampCameraAxis = (
+  target: number,
+  viewSize: number,
+  mapSize: number
+) => {
+  if (mapSize <= viewSize) {
+    return mapSize / 2;
+  }
+
+  const halfViewSize = viewSize / 2;
+
+  return Math.min(Math.max(target, halfViewSize), mapSize - halfViewSize);
 };
 
 const GameScene: React.FC = () => {
@@ -105,14 +159,14 @@ const GameScene: React.FC = () => {
     bgm.loop = true;
     bgm.volume = 0.28;
     bgm.muted = isMutedRef.current;
-    bgm.preload = "auto";
-    bgm.load();
+    bgm.preload = "metadata";
     bgmRef.current = bgm;
     k.volume(isMutedRef.current ? 0 : 1);
 
     const startBgm = () => {
       if (!bgmRef.current) return;
 
+      bgmRef.current.preload = "auto";
       void bgmRef.current.play().catch(() => {
         // Browsers can still block audio if the gesture is not accepted.
       });
@@ -166,8 +220,10 @@ const GameScene: React.FC = () => {
       }) => {
         releaseLandscapeOrientation();
         k.setBackground(k.Color.fromHex("#3a403b"));
-        const mapData = await (await fetch("./mi-casa.json")).json();
+        const mapData = await loadHouseMapData();
         const layers = mapData.layers;
+        const mapWidth = mapData.width * mapData.tilewidth * scaleFactor;
+        const mapHeight = mapData.height * mapData.tileheight * scaleFactor;
 
         const map = k.add([k.sprite("map"), k.pos(0), k.scale(scaleFactor)]);
 
@@ -230,32 +286,38 @@ const GameScene: React.FC = () => {
           }
         };
 
+        player.onCollide("boundary", (obj) => {
+          const boundaryName = (obj as { name?: string }).name as
+            | DialogueKeys
+            | undefined;
+
+          if (!boundaryName || !dialogueData[boundaryName]) return;
+          if (player.isInDialogue) return;
+
+          handleDialogue(boundaryName);
+        });
+
         for (const layer of layers) {
           if (layer.name === "boundaries") {
-            for (const boundary of layer.objects) {
+            const boundaryObjects = layer.objects ?? [];
+
+            for (const boundary of boundaryObjects) {
               map.add([
                 k.area({
                   shape: new k.Rect(k.vec2(0), boundary.width, boundary.height),
                 }),
                 k.body({ isStatic: true }),
                 k.pos(boundary.x, boundary.y),
+                "boundary",
                 { name: boundary.name },
               ]);
-
-              player.onCollide((obj) => {
-                const boundaryName = obj.name as DialogueKeys;
-
-                if (boundaryName && dialogueData[boundaryName]) {
-                  if (!player.isInDialogue) {
-                    handleDialogue(boundaryName);
-                  }
-                }
-              });
             }
           }
 
           if (layer.name === "spawnpoints") {
-            for (const entity of layer.objects) {
+            const spawnpointObjects = layer.objects ?? [];
+
+            for (const entity of spawnpointObjects) {
               if (entity.name === "player") {
                 player.pos = k.vec2(
                   (map.pos.x + entity.x) * scaleFactor,
@@ -303,10 +365,28 @@ const GameScene: React.FC = () => {
           }
         }
 
+        const updateCamera = () => {
+          const camScale = k.camScale();
+          const viewWidth = k.width() / camScale.x;
+          const viewHeight = k.height() / camScale.y;
+          const cameraYOffset = k.width() < k.height() ? 0 : -100;
+
+          k.camPos(
+            clampCameraAxis(player.worldPos().x, viewWidth, mapWidth),
+            clampCameraAxis(
+              player.worldPos().y + cameraYOffset,
+              viewHeight,
+              mapHeight
+            )
+          );
+        };
+
         setCamScale(k);
+        updateCamera();
 
         k.onResize(() => {
           setCamScale(k);
+          updateCamera();
         });
 
         k.onUpdate(() => {
@@ -316,8 +396,7 @@ const GameScene: React.FC = () => {
             return;
           }
 
-          // Camera follows the player
-          k.camPos(player.worldPos().x, player.worldPos().y - 100);
+          updateCamera();
         });
 
         const stopAnims = () => {
@@ -469,14 +548,7 @@ const GameScene: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100vw",
-        height: "100dvh",
-        overflow: "hidden",
-      }}
-    >
+    <div id="game-shell">
       <button
         type="button"
         aria-pressed={isMuted}

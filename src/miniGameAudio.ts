@@ -3,6 +3,7 @@ import {
   getAudioMutedFromEvent,
   readAudioMuted,
 } from "./audioState";
+import { isConstrainedMobileDevice } from "./deviceProfile";
 
 export type MiniGameAudioId =
   | "rockPaperScissors"
@@ -53,6 +54,7 @@ const miniGameAudioConfig: Record<
 };
 
 const miniGameAudioMap = new Map<MiniGameAudioId, HTMLAudioElement>();
+const shouldEagerlyPrimeAudio = () => !isConstrainedMobileDevice();
 
 const getMiniGameAudio = (gameId: MiniGameAudioId) => {
   let audio = miniGameAudioMap.get(gameId);
@@ -64,7 +66,7 @@ const getMiniGameAudio = (gameId: MiniGameAudioId) => {
   audio.loop = true;
   audio.volume = config.volume;
   audio.muted = readAudioMuted();
-  audio.preload = "auto";
+  audio.preload = "metadata";
 
   miniGameAudioMap.set(gameId, audio);
   return audio;
@@ -73,7 +75,12 @@ const getMiniGameAudio = (gameId: MiniGameAudioId) => {
 export const primeMiniGameAudio = (gameId: MiniGameAudioId) => {
   if (typeof window === "undefined") return;
 
-  getMiniGameAudio(gameId).load();
+  const audio = getMiniGameAudio(gameId);
+
+  if (!shouldEagerlyPrimeAudio()) return;
+
+  audio.preload = "auto";
+  audio.load();
 };
 
 export const startMiniGameAudio = (gameId: MiniGameAudioId) => {
@@ -85,6 +92,7 @@ export const startMiniGameAudio = (gameId: MiniGameAudioId) => {
   audio.muted = readAudioMuted();
   audio.pause();
   audio.currentTime = 0;
+  audio.preload = "auto";
 
   void audio.play().catch(() => {
     // Browsers can still reject playback even when the audio is already preloaded.
